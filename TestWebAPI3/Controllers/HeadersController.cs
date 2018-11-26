@@ -7,33 +7,31 @@
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Primitives;
 
+    using Services;
+
     [Route("api/[controller]")]
     [ApiController]
     public class HeadersController : ControllerBase
     {
-        [HttpGet("{key?}")]
+        private IRequestHeadersService _requestHeadersService;
+
+        public HeadersController(IRequestHeadersService requestHeadersService)
+        {
+            this._requestHeadersService = requestHeadersService;
+        }
+
+        [HttpGet]
+        public ActionResult<IDictionary<string, string>> Get()
+        {
+            return this.Get(null);
+        }
+
+
+        [HttpGet("{key}")]
         public ActionResult<IDictionary<string, string>> Get(string key)
         {
-            IHeaderDictionary requestHeaders = this.HttpContext.Request.Headers;
-            Dictionary<string, string> dictionary;
-
-            if (!string.IsNullOrWhiteSpace(key))
-            {
-                dictionary = new Dictionary<string, string>
-                {
-                    {
-                        key,
-                        !StringValues.IsNullOrEmpty(requestHeaders[key]) ? string.Join('|', requestHeaders[key]) : "--NULL--"
-                    }
-                };
-            }
-            else
-            {
-                dictionary = requestHeaders.ToDictionary(requestHeader => requestHeader.Key,
-                                                         requestHeader => string.Join('|', requestHeader.Value.ToArray()));
-            }
-
-            return dictionary;
+            IDictionary<string, string> dictionary = this._requestHeadersService.GetHeaders(key);
+            return this.Ok(dictionary);
         }
     }
 }
